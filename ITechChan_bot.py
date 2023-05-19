@@ -39,7 +39,12 @@ def get_start_msg(message):
     return START_MSG.format(first_name = message.chat.first_name)
 
 def get_info_msg():
-    return "Я могла бы много рассказать, но пока я ничего не знаю."
+    return """Я могла бы много рассказать, но пока я ничего не знаю.
+Разве только команды:
+ - /start
+ - /info
+ - /echo <текст>
+ """
 
 class BotsCommands:
     def __init__(self, bot: Bot):  # Can initialize however you like
