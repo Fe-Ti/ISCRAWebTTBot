@@ -4,6 +4,42 @@ from time import sleep
 from origamibot import OrigamiBot as Bot
 from origamibot.listener import Listener
 
+TEXT_ART_32 = """
+          ▗▄▄███████▙▄▖         
+         ▟█████████████▙▖       
+      ▗███▗▛▐▛█████▛▛▜███▖      
+      ███▛█ ▙██ ██▜█▞▐▜▙██      
+      ▐███▙▗███▌▐███▌▐████▘▟▛▜▙ 
+     ▟█████▐███▗▙███▌▐████▙▛▗▟▌ 
+     ██▝█▛█▀▝▜█▙██▀▀▀▜█▀█▙ ▜▛▙▖ 
+     ▛██▟▌ ▄▄ ▐▛▜  ▄▖  ▞██▛▜▖▝▙▖
+     ▌███▖▝█▌▌ ▜  ▐▐█   ▟█▙ █▖▜▌
+     ████▙ ▝▀▘    ▝▀▘ ▗▄███▖▐▌▟▌
+    ▟█████▌    ▙     ▗▙█▙██▌ █▀ 
+  ▗▟████▜██▄        ▗███▟██▝    
+ ▐█▜▛▟██▙▜██▙▖    ▗████▛███     
+▞▀ ▟▜████▙▜████▙▟█████████▙▚    
+ ▄▞▗█▚▜████▀▀▘     ▝▀▀▛████▛▖   
+▀ ▄▞▘▝█▛▘     ▄▟█▙▙▖     ▜██▗▖  
+▗▀▘ ▗▐█▘     ▝▐█▀▜▖       ▜█▌▚
+"""
+
+TEXT_ART_14 = """
+   ▗▞█████▄   
+  ▞███▌▟█▝█▌▄▖
+  ██▛▀▜▛▀▜█▛▄▌
+  ▜█ █▝ █ █▙▚▜
+  ██▙    ▟██▝ 
+ ▞██▟█▘▖▜██▙▖ 
+▞▝▐▀  ▗▙   ▜▖
+"""
+
+START_MSG = "Привет, {first_name}! Меня зовут Тасфия ‒ я бот таск-трекера Искры."
+def get_start_msg(message):
+    return START_MSG.format(first_name = message.chat.first_name)
+
+def get_info_msg():
+    return "Я могла бы много рассказать, но пока я ничего не знаю."
 
 class BotsCommands:
     def __init__(self, bot: Bot):  # Can initialize however you like
@@ -12,22 +48,30 @@ class BotsCommands:
     def start(self, message):   # /start command
         self.bot.send_message(
             message.chat.id,
-            'Hello user!\nThis is an example bot.')
+            get_start_msg(message))
+
+    def info(self, message):
+        self.bot.send_message(
+            message.chat.id,
+            get_info_msg())
 
     def echo(self, message, value: str):  # /echo [value: str] command
+        # ~ print(message)
+        # ~ print(value)
         self.bot.send_message(
             message.chat.id,
             value
             )
 
-    def add(self, message, a: float, b: float):  # /add [a: float] [b: float]
-        self.bot.send_message(
-            message.chat.id,
-            str(a + b)
-            )
+    # ~ def add(self, message, a: float, b: float):  # /add [a: float] [b: float]
+        # ~ self.bot.send_message(
+            # ~ message.chat.id,
+            # ~ str(a + b)
+            # ~ )
+            
 
     def _not_a_command(self):   # This method not considered a command
-        print('I am not a command')
+        print('???')
 
 
 class MessageListener(Listener):  # Event listener must inherit Listener
@@ -38,14 +82,19 @@ class MessageListener(Listener):  # Event listener must inherit Listener
     def on_message(self, message):   # called on every message
         self.m_count += 1
         print(f'Total messages: {self.m_count}')
+        # Here should be some message processing
+        self.bot.send_message(
+            message.chat.id,
+            "Сообщение получила!")
+
 
     def on_command_failure(self, message, err=None):  # When command fails
         if err is None:
             self.bot.send_message(message.chat.id,
-                                  'Command failed to bind arguments!')
+                                  'Э-э-эм... не поняла')
         else:
             self.bot.send_message(message.chat.id,
-                                  'Error in command:\n{err}')
+                                  'В команде есть ошибка:\n{err}')
 
 
 if __name__ == '__main__':
@@ -62,6 +111,7 @@ if __name__ == '__main__':
     # and event listeners as we like
 
     bot.start()   # start bot's threads
+    print(dir(bot))
     while True:
         sleep(1)
         # Can also do some useful work i main thread
