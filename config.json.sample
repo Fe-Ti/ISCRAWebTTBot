@@ -1,5 +1,5 @@
 {
-    "refresh_period"        : 1000, # in seconds
+    "refresh_period"        : 1000, // in seconds
     "sleep_timeout"         : 10,
     "notify_period"         : 86400,
 //    "notify_period"         : null,

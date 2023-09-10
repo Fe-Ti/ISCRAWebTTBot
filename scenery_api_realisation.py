@@ -61,12 +61,12 @@ ID проекта: {project_id}
     issue_priorities = """Приоритеты: {}"""
     issue_priorities_list_entry = issue_statuses_list_entry
 
-class SceneryApiRealisation(DefaultApiRealisation):
+class SceneryApiRealisation(DefaultSceneryApiRealisation):
     ### Functions which don't use redmine API
     def reset_user(self, user):
-        print(user.state)
+        # ~ print(user)
         self.bot.reset_user(user, keep_settings=True, reset_state=False)
-        print(user.state)
+        # ~ print(user.state)
 
     def push_state_to_stack(self, user):
         storage = user.variables[Storage]

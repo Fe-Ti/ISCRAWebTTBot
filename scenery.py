@@ -1,7 +1,7 @@
 # Copyright 2023 Fe-Ti aka T.Kravchenko
 from redmine_bot.constants import *
 
-scenery = {
+scenery_source = {
     Start_state   : "start",
     Hint_template : "\n\n>>{}",
     States   :{
@@ -409,14 +409,14 @@ scenery = {
         "show_list_of_projects" : {
             Type    : Say,
             Error   : "Мне не удалось получить список проектов",
-            Next    : "start",
+            Next    : "reset_user",
             Functions: ["get_project_list"],
             Properties : [Lexeme_preserving]
         },
         "show_list_of_issues" : {
             Type     : Say,
             Error    : "Мне не удалось получить список задач",
-            Next     : "start",
+            Next     : "reset_user",
             Functions: ["get_issue_list"],
             Properties : [Lexeme_preserving]
         },

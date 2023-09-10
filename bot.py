@@ -24,19 +24,20 @@
 
 # Then think about next goals
 # Copyright 2023 Fe-Ti aka T.Kravchenko
-from redmine_bot import RedmineBot
 
 import signal
+import json
 from sys import argv
 from time import sleep
 
 from origamibot import OrigamiBot as Bot
 from origamibot.listener import Listener
 
-import json
+from scenery import scenery_source as scenery
+from redmine_bot import RedmineBot
+from scenery_api_realisation import *
 
 config = {}
-scenery = {}
 with open("config.json") as cfg_file:
     config = json.loads(cfg_file.read())
 
@@ -111,8 +112,8 @@ if __name__ == '__main__':
     token = (argv[1] if len(argv) > 1 else input('Enter bot token: '))
     bot = Bot(token)   # Create instance of OrigamiBot class
 
-    api_realisation = DefaultApiRealisation(templates=DefaultTemplates())
-    scbot = RedmineBot(scenery_v2, config, api_realisation=api_realisation)   # Create instance of scenery bot
+    api_realisation = SceneryApiRealisation(templates=ApiRealisationTemplates())
+    scbot = RedmineBot(scenery, config, api_realisation=api_realisation)   # Create instance of scenery bot
 
     # Add an event listener
     bot.add_listener(MessageListener(bot,scbot))
