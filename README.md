@@ -16,16 +16,16 @@
 1. Склонируйте репозиторий
 2. Исправьте конфигурацию. На данный момент она находится в переменной `config`.
 Параметры указанные ниже отвечают за соединение с сервером.
-```python
-    "use_https"             : False, # При False будет использован простой http
+```json
+    "use_https"             : false, // При false будет использован простой http
     "redmine_root_url"      : "localhost/redmine",
-    "bot_user_key"          : "8e7a355d7f58e4b209b91d9d1f76f2a85ec4b0b6", # ключ API Redmine
+    "bot_user_key"          : "8e7a355d7f58e4b209b91d9d1f76f2a85ec4b0b6", // ключ API Redmine
 ```
 3. Установите библиотеки:
 ```sh
 python3 -m venv tgrbot
 source ./tgrbot/bin/activate
-python3 -m pip install --upgrade redmine-bot origamibot
+python3 -m pip install --upgrade redminebotlib origamibot
 ```
 4. Запустите bot.py
 ```sh

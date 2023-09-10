@@ -2,8 +2,9 @@
 
 import json
 import logging
+from datetime import date
 
-from redmine_bot import *
+from redminebotlib import *
 
 class ApiRealisationTemplates(DefaultApiRealisationTemplates):
     issue = """№{id} {subject}
@@ -50,9 +51,9 @@ ID проекта: {project_id}
 
     issue_custom_field = project_custom_field
 
-    project_list_entry = """№{id} "{name}" ({identifier})\n"""
+    project_list_entry = """\n№{id} "{name}" ({identifier})"""
 
-    issue_list_entry = """№{id} "{subject}"\n"""
+    issue_list_entry = """\n№{id} "{subject}" """
     
     issue_statuses = """Статусы: {}"""
     issue_statuses_list_entry = """\n{id} "{name}" """
@@ -60,6 +61,12 @@ ID проекта: {project_id}
     issue_trackers_list_entry = issue_statuses_list_entry
     issue_priorities = """Приоритеты: {}"""
     issue_priorities_list_entry = issue_statuses_list_entry
+    
+    notification_header = "Я проверила список твоих задач."
+    notification_no_issues = " Он оказался пуст. :("
+    notification_issues_found = " Они такие:\n{}"
+    days_before_due_date = "(срок {}д.)"
+    expired_due_date = "(опоздание {}д.)"
 
 class SceneryApiRealisation(DefaultSceneryApiRealisation):
     ### Functions which don't use redmine API
@@ -96,6 +103,30 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
         self.bot.reset_user(user, keep_settings=True, reset_state=True)
 
     ### Functions which call ServerControlUnit functions (i.e. use RM API)
+
+    def _notify(self, user):
+        resp_data = self.bot.scu.get_issue_list({ "assigned_to_id" : "me" },
+                                user.variables[Settings][Key])
+        string = str()
+        if resp_data[Success]:
+            today = date.today()
+            for issue in resp_data["data"]["issues"]:
+                string += self.templates.issue_list_entry.format_map(issue)
+                if "due_date" in issue:
+                    due_date = date.fromisoformat(issue["due_date"])
+                    days_delta = (due_date - today).days
+                    if days_delta < 0:
+                        days_delta = abs(days_delta)
+                        template = self.templates.expired_due_date
+                    else:
+                        template = self.templates.days_before_due_date
+                    string += template.format(days_delta)
+            if string:
+                string = self.templates.notification_header + self.templates.notification_issues_found.format(string)
+                self.bot.reply_function(Message(user.uid, string))
+            else:
+                string = self.templates.notification_header + self.templates.notification_no_issues
+                self.bot.reply_function(Message(user.uid, string))
 
     def create(self, user):
         self._clear_nulls(user.variables[Data])

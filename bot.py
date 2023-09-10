@@ -34,7 +34,7 @@ from origamibot import OrigamiBot as Bot
 from origamibot.listener import Listener
 
 from scenery import scenery_source as scenery
-from redmine_bot import RedmineBot
+from redminebotlib import RedmineBot
 from scenery_api_realisation import *
 
 config = {}
@@ -132,4 +132,5 @@ if __name__ == '__main__':
     scbot.start()   # start bot's threads
 
     while True:
+        # ~ scbot.notificating_routine()
         sleep(1)

@@ -1,5 +1,5 @@
 # Copyright 2023 Fe-Ti aka T.Kravchenko
-from redmine_bot.constants import *
+from redminebotlib.constants import *
 
 scenery_source = {
     Start_state   : "start",
