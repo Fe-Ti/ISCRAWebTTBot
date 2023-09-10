@@ -22,13 +22,16 @@
     "bot_user_key"          : "8e7a355d7f58e4b209b91d9d1f76f2a85ec4b0b6", # ключ API Redmine
 ```
 3. Установите библиотеки:
-```
-pip install --upgrade redmine-bot origamibot
+```sh
+python3 -m venv tgrbot
+source ./tgrbot/bin/activate
+python3 -m pip install --upgrade redmine-bot origamibot
 ```
 4. Запустите bot.py
-```
+```sh
 python3 bot.py [ключ бота в Telegram]
 ```
+----
 
 ```
 Copyright 2023 Fe-Ti aka T.Kravchenko, ISCRA
