@@ -27,19 +27,27 @@
 
 import signal
 import json
+import importlib
 from sys import argv
 from time import sleep
 
 from origamibot import OrigamiBot as Bot
 from origamibot.listener import Listener
 
-from scenery import scenery_source as scenery
 from redminebotlib import RedmineBot
-from scenery_api_realisation import *
+from redminebotlib.data_structs import Message, User
 
-config = {}
-with open("config.json") as cfg_file:
-    config = json.loads(cfg_file.read())
+import scenery_api_realisation as sar
+from scenery import scenery_source
+
+def load_json(path):
+    with open(path) as ifile:
+        dictionary = json.loads(ifile.read())
+    return dictionary
+
+def save_scenery_to_json(scenery, filename):
+    with open(filename, 'w') as sc_file:
+        sc_file.write(json.dumps(scenery))
 
 
 START_MSG = """Привет, {first_name}. Меня зовут Тасфия ‒ я бот таск-трекера Искры.
@@ -109,10 +117,18 @@ class MessageListener(Listener):  # Event listener must inherit Listener
 
 
 if __name__ == '__main__':
+    
+    config = load_json("config.json")
+    try:
+        scenery = load_json(config["scenery_path"])
+    except:
+        save_scenery_to_json(scenery_source, config["scenery_path"])
+        scenery = load_json(config["scenery_path"])
+
     token = (argv[1] if len(argv) > 1 else input('Enter bot token: '))
     bot = Bot(token)   # Create instance of OrigamiBot class
 
-    api_realisation = SceneryApiRealisation(templates=ApiRealisationTemplates())
+    api_realisation = sar.SceneryApiRealisation(templates=sar.ApiRealisationTemplates())
     scbot = RedmineBot(scenery, config, api_realisation=api_realisation)   # Create instance of scenery bot
 
     # Add an event listener
@@ -130,7 +146,33 @@ if __name__ == '__main__':
 
     bot.start()   # start bot's threads
     scbot.start()   # start bot's threads
+    
+    
+    c_reload = "reload"
+    c_stop = "stop"
+    c_start = "start"
+    c_shutdown = "shutdown"
 
     while True:
-        # ~ scbot.notificating_routine()
-        sleep(1)
+        try:
+            cmd = input(">>").strip()
+            if cmd == c_start:
+                scbot.start()
+            elif cmd == c_stop:
+                scbot.stop()
+            elif cmd == c_reload:
+                config = load_json("config.json")
+                scenery = load_json(config["scenery_path"])
+                importlib.reload(sar)
+                api_realisation = sar.SceneryApiRealisation(templates=sar.ApiRealisationTemplates())
+                if scbot.is_running:
+                    scbot.stop()
+                scbot.reload(config=config, scenery=scenery, api_realisation=api_realisation)
+                scbot.start()
+            elif cmd == c_shutdown:
+                scbot.shutdown()
+                break
+            else:
+                print("Command error. Try: stop start reload shutdown")
+        except Exception as error:
+            print(error)
