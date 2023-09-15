@@ -1,11 +1,11 @@
 {
-    "refresh_period"        : 1000, // in seconds
+    "refresh_period"        : 1000,
     "sleep_timeout"         : 10,
     "notify_period"         : 86400,
-//    "notify_period"         : null,
     "use_https"             : false,
     "redmine_root_url"      : "localhost/redmine",
     "bot_user_key"          : "8e7a355d7f58e4b209b91d9d1f76f2a85ec4b0b6",
     "user_db_path"          : "./localbase.json",
+    "scenery_path"          : "./scenery.json",
     "allowed_api_functions" : []
 }

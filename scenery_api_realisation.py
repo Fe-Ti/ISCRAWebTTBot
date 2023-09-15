@@ -17,6 +17,7 @@ class ApiRealisationTemplates(DefaultApiRealisationTemplates):
     
 Дата начала: {start_date}
 Срок завершения: {due_date}
+Статус: {status[name]}({status[id]})
 """
     issue_assigned_to = "Назначена: {assigned_to[name]} ({assigned_to[id]})"
 
@@ -28,11 +29,25 @@ ID проекта: {project_id}
 Описание: {description}
 
 Дата начала: {start_date}
-Дедлайн: {due_date}
+Срок завершения: {due_date}
 Статус: {status}
 
 Назначена: {assigned_to}
 Трекер: {tracker}"""
+
+    issue_update_draft = """Состояние задачи:{}"""
+    issue_update_dict = {
+        "notes"         : "\nПримечания:",
+        "project_id"    : "\nID проекта:",
+        "subject"       : "\nТема:",
+        "description"   : "\nОписание:",
+        "start_date"    : "\nДата начала:",
+        "due_date"      : "\nСрок завершения:",
+        "status"        : "\nСтатус:",
+        "assigned_to"   : "\nНазначена:",
+        "tracker"       : "\nТрекер:",
+    }
+
 
     project = """{name} ({identifier})
 
@@ -45,6 +60,7 @@ ID проекта: {project_id}
 Идентификатор: {identifier}
 Описание: {description}
 """
+    project_update_draft = project_draft
 
     project_custom_field = """{name}: {value}\n"""
     project_member_field = """{user[name]} (id:{user[id]}): {role_names}\n"""
@@ -67,6 +83,7 @@ ID проекта: {project_id}
     notification_issues_found = " Они такие:\n{}"
     days_before_due_date = "(срок {}д.)"
     expired_due_date = "(опоздание {}д.)"
+    server_error = "Набор ошибок от сервера: {}."
 
 class SceneryApiRealisation(DefaultSceneryApiRealisation):
     ### Functions which don't use redmine API
@@ -101,7 +118,15 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
 
     def reset_to_start(self, user):
         self.bot.reset_user(user, keep_settings=True, reset_state=True)
-
+    
+    def report_failure(self, user, resp_data=list()):
+        self.bot.reply_function(Message(user.uid, user.state.error))
+        if "errors" in resp_data["data"]:
+            resp_data["data"] = json.loads(resp_data["data"])
+            self.bot.reply_function(
+                Message(user.uid,
+                    self.templates.server_error.format(resp_data["data"]["errors"]))
+                )
     ### Functions which call ServerControlUnit functions (i.e. use RM API)
 
     def _notify(self, user):
@@ -130,14 +155,29 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
 
     def create(self, user):
         self._clear_nulls(user.variables[Data])
-        if user.variables[Storage][Context] is Project:
-            self.bot.scu.create_project(user.variables[Parameters],
+        if user.variables[Storage][Context] == Project:
+            resp_data = self.bot.scu.create_project(user.variables[Parameters],
                                     user.variables[Data],
                                     user.variables[Settings][Key])
-        elif user.variables[Storage][Context] is Issue:
-            self.bot.scu.create_issue(user.variables[Parameters],
+        elif user.variables[Storage][Context] == Issue:
+            resp_data = self.bot.scu.create_issue(user.variables[Parameters],
                                     user.variables[Data],
                                     user.variables[Settings][Key])
+        else:
+            logging.error("Context is not set correctly. Please check your scenery.")
+            return
+        if resp_data[Success]:
+            issue = resp_data["data"]["issue"]
+            string = self.templates.issue.format_map(issue)
+            if "assigned_to" in issue:
+                string += self.templates.issue_assigned_to.format_map(issue)
+            if "custom_fields" in issue:
+                for custom_field in issue["custom_fields"]:
+                    string += self.templates.project_custom_field.format_map(custom_field)
+            self.bot.reply_function(Message(user.uid, user.state.phrase))
+            self.bot.reply_function(Message(user.uid, string))
+        else:
+            self.report_failure(user, resp_data)
 
     def _project_to_str(self, user, resp_data):
         if resp_data[Success]:
@@ -163,62 +203,64 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
         return str()
 
     def show(self, user):
-        if user.variables[Storage][Context] is Project:
+        if user.variables[Storage][Context] == Project:
             resp_data = self.bot.scu.show_project(user.variables[Parameters],
                                     user.variables[Settings][Key])
             string = self._project_to_str(user, resp_data)
-        elif user.variables[Storage][Context] is Issue:
+        elif user.variables[Storage][Context] == Issue:
             resp_data = self.bot.scu.show_issue(user.variables[Parameters],
                                     user.variables[Settings][Key])
             string = self._issue_to_str(user, resp_data)
         else:
             logging.error("Context is not set correctly. Please check your scenery.")
             return
-        if not resp_data[Success]:
-            self._report_failure(user)
-        else:
+        user.variables[Storage][Success] = resp_data[Success]
+        if resp_data[Success]:
             self.bot.reply_function(Message(user.uid, string))
+        else:
+            self.report_failure(user, resp_data)
 
-    def get_data(self, user):
+    def _process_empty_resp_data(self, user, resp_data):
+        if resp_data[Success]:
+            self.bot.reply_function(Message(user.uid, user.state.phrase))
+        else:
+            self.report_failure(user, resp_data)
+
+    def update(self, user):
+        # ~ print(user.variables[Data])
+        self._clear_nulls(user.variables[Data])
         if user.variables[Storage][Context] == Project:
-            resp_data = self.bot.scu.show_project(user.variables[Parameters],
-                                                user.variables[Settings][Key])
+            resp_data = self.bot.scu.update_project(user.variables[Parameters],
+                                    user.variables[Data],
+                                    user.variables[Settings][Key])
         elif user.variables[Storage][Context] == Issue:
-            resp_data = self.bot.scu.show_issue(user.variables[Parameters],
-                                                user.variables[Settings][Key])
+            
+            resp_data = self.bot.scu.update_issue(user.variables[Parameters],
+                                    user.variables[Data],
+                                    user.variables[Settings][Key])
         else:
             logging.error("Context is not set correctly. Please check your scenery.")
             return
-        if resp_data[Success]:
-            user.variables[Storage]["data"] = resp_data["data"]
-            user.variables[Storage][Success] = resp_data[Success]
-        else:
-            self._report_failure(user)
-            user.variables[Storage][Success] = False
-
-    def update(self, user):
-        self._clear_nulls(user.variables[Data])
-        if user.variables[Storage][Context] is Project:
-            self.bot.scu.update_project(user.variables[Parameters],
-                                    user.variables[Data],
-                                    user.variables[Settings][Key])
-        elif user.variables[Storage][Context] is Issue:
-            self.bot.scu.update_issue(user.variables[Parameters],
-                                    user.variables[Data],
-                                    user.variables[Settings][Key])
+        # ~ print(resp_data)
+        self._process_empty_resp_data(user, resp_data)
 
     def delete(self, user):
-        if user.variables[Storage][Context] is Project:
-            self.bot.scu.delete_project(user.variables[Data]["id"],
+        if user.variables[Storage][Context] == Project:
+            resp_data = self.bot.scu.delete_project(user.variables[Parameters]["id"],
                                     user.variables[Settings][Key])
-        elif user.variables[Storage][Context] is Issue:
-            self.bot.scu.delete_issue(user.variables[Data]["id"],
+        elif user.variables[Storage][Context] == Issue:
+            resp_data = self.bot.scu.delete_issue(user.variables[Parameters]["id"],
                                     user.variables[Settings][Key])
+        else:
+            logging.error("Context is not set correctly. Please check your scenery.")
+            return
+        self._process_empty_resp_data(user, resp_data)
 
     def get_project_list(self, user):
         parameters = user.variables[Parameters]
         key = user.variables[Settings][Key]
         resp_data = self.bot.scu.get_project_list(parameters, key)
+        user.variables[Storage][Success] = resp_data[Success]
         if resp_data[Success]:
             msg_string = str()
             for project in resp_data["data"]["projects"]:
@@ -229,13 +271,14 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
             else:
                 self.bot.reply_function(Message(user.uid, msg_string))
         else:
-            self._report_failure(user)
+            self._report_failure(user, resp_data)
 
 
     def get_issue_list(self, user):
         parameters = user.variables[Parameters]
         key = user.variables[Settings][Key]
         resp_data = self.bot.scu.get_issue_list(parameters, key)
+        user.variables[Storage][Success] = resp_data[Success]
         if resp_data[Success]:
             msg_string = str()
             for issue in resp_data["data"]["issues"]:
@@ -245,7 +288,7 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
             else:
                 self.bot.reply_function(Message(user.uid, msg_string))
         else:
-            self._report_failure(user)
+            self._report_failure(user, resp_data)
 
     def show_project_draft(self, user):
         self.bot.reply_function(Message(
@@ -257,6 +300,21 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
         self.bot.reply_function(Message(
                                     user.uid, 
                                     self.templates.issue_draft.format_map(user.variables[Data])
+                                    ))
+
+    def show_project_update_draft(self, user):
+        self.bot.reply_function(Message(
+                                    user.uid, 
+                                    self.templates.project_update_draft.format_map(user.variables[Storage][Data])
+                                    ))
+    def show_issue_update_draft(self, user):
+        string = str()
+        for key, translation in self.templates.issue_update_dict.items():
+            if key in user.variables[Data]:
+                string += f"{translation} {user.variables[Data][key]}"
+        self.bot.reply_function(Message(
+                                    user.uid,
+                                    self.templates.issue_update_draft.format(string)
                                     ))
 
     def log_to_user(self, user, log_msg):
@@ -314,7 +372,27 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
             template_list_entry = self.templates.issue_priorities_list_entry,
         )
 
-    def add_watcher(self, user):
-        pass
-    def delete_watcher(self, user):
-        pass
+    # ~ def add_watcher(self, user):
+        # ~ pass
+    # ~ def delete_watcher(self, user):
+        # ~ pass
+
+    def get_data(self, user):
+        context = user.variables[Storage][Context]
+        if context == Project:
+            resp_data = self.bot.scu.show_project(user.variables[Parameters],
+                                                user.variables[Settings][Key])
+        elif context == Issue:
+            resp_data = self.bot.scu.show_issue(user.variables[Parameters],
+                                                user.variables[Settings][Key])
+        else:
+            logging.error("Context is not set correctly. Please check your scenery.")
+            return
+        if resp_data[Success]:
+            user.variables[Storage][Data] = resp_data["data"][context.lower()]
+            user.variables[Storage][Success] = resp_data[Success]
+        else:
+            self._report_failure(user, resp_data)
+            user.variables[Storage][Success] = False
+
+

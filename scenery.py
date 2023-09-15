@@ -28,16 +28,62 @@ scenery_source = {
         },
         "start" : {
             Type    : Ask,
-            Info    : "start",
             Phrase  : "Введи команду.",
             Next    : {
                         "create"    : ["создай"],
-                        # ~ "update"    : ["обнови","измени"],
+                        "update"    : ["обнови","измени"],
                         "show"      : ["покажи"],
-                        # ~ "delete"    : ["удали"],
+                        "delete"    : ["удали"],
                         # ~ "select"    : ["выбери", "в"],
                         "settings"  : ["запомни", "настрой"]
                     },
+        },
+        
+        "delete" : {
+            Type    : Ask,
+            Info    : "Здесь должна быть справка",
+            Phrase  : """Что ты хочешь удалить?""",
+            Next    : {
+                            "delete_project_get_id":["проект"],
+                            "delete_issue_get_id":["задачу"],
+                        },
+            # ~ Properties : []
+        },
+        "delete_project_get_id" : {
+            Type    : Get,
+            Info    : "no_help",
+            Phrase  : """Какой проект ты хочешь удалить?""",
+            Next    : "approve_deletion",
+            Input   : {Parameters:'id'},
+            Set     : { Storage : { Context : Project }, },
+            Functions: ["show"],
+        },
+        "delete_issue_get_id" : {
+            Type    : Get,
+            Info    : "no_help",
+            Phrase  : """Какую задачу ты хочешь удалить?""",
+            Next    : "approve_deletion",
+            Input   : {Parameters:'id'},
+            Set     : { Storage  : { Context : Issue } },
+            Functions: ["show"],
+        },
+        "approve_deletion" : {
+            Type    : Ask,
+            Info    : "Здесь должна быть справка",
+            Phrase  : """Ты точно хочешь удалить?""",
+            Next    : {
+                            "delete_call":["да"],
+                            "reset_user":["нет"],
+                        },
+        },
+        "delete_call" : {
+            Type     : Say,
+            Error    : "В ходе удаления произошла ошибка.",
+            Info     : "no_help",
+            Phrase   : """Удаляю объект...""",
+            Next     : "reset_user",
+            Functions: ["delete"],
+            Properties : [Lexeme_preserving]
         },
         "create" : {
             Type    : Ask,
@@ -86,21 +132,18 @@ scenery_source = {
         },
         "create_project_set_identifier" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи идентификатор проекта.""",
             Next    : "draft_show_project",
             Input   : {Data:'identifier'},
         },
         "create_project_set_name" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи название проекта.""",
             Next    : "draft_show_project",
             Input   : {Data:'name'},
         },
         "create_project_set_description" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи описание проекта.""",
             Next    : "draft_show_project",
             Input   : {Data:'description'},
@@ -123,7 +166,7 @@ scenery_source = {
                                 "start_date" : "",
                                 "due_date" : "",
                                 "status" : "",
-                                "assigned_to" : None,
+                                "assigned_to" : "",
                                 "tracker" : "",
                                 # ~ "" : "",
                             }
@@ -171,42 +214,36 @@ scenery_source = {
         },
         "create_issue_set_project_id" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи идентификатор проекта.""",
             Next    : "draft_show_issue",
             Input   : {Data:'project_id'},
         },
         "create_issue_set_subject" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи тему.""",
             Next    : "draft_show_issue",
             Input   : {Data:'subject'},
         },
         "create_issue_set_description" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи описание.""",
             Next    : "draft_show_issue",
             Input   : {Data:'description'},
         },
         "create_issue_set_date_start" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи дату начала. Например, 2023-08-02""",
             Next    : "draft_show_issue",
             Input   : {Data:'start_date'},
         },
         "create_issue_set_date_due" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи срок завершения. Например, 2023-08-02""",
             Next    : "draft_show_issue",
             Input   : {Data:'due_date'},
         },
         "create_issue_set_assign" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи id пользователя, которому хочешь назначить задачу.""",
             Next    : "draft_show_issue",
             Functions:["show_project_memberships"],
@@ -214,7 +251,6 @@ scenery_source = {
         },
         "create_issue_set_tracker" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи трекер.""",
             Next    : "draft_show_issue",
             Functions:["show_issue_trackers"],
@@ -222,9 +258,9 @@ scenery_source = {
         },
         "create_call" : {
             Type     : Say,
-            Error    : "Мне не удалось отправить данные.",
+            Error    : "Мне не удалось создать объект.",
             Info     : "start",
-            Phrase   : """""",
+            Phrase   : """Объект создан:""",
             Next     : "reset_user",
             Functions: ["create"],
             Properties : [Lexeme_preserving]
@@ -235,21 +271,20 @@ scenery_source = {
             Info    : "Здесь должна быть справка",
             Phrase  : """Какой тип объекта ты хочешь создать?""",
             Next    : {
-                            "update_project_init_vars":["проект"],
-                            "update_issue_init_vars":["задачу"],
+                            "update_project_get_id":["проект"],
+                            "update_issue_get_id":["задачу"],
                         },
         },
-        "update_project_init_vars" : {
+        "update_project_get_id" : {
             Type    : Get,
             Error   : "data_get_error",
             Phrase  : """Какой проект? Введи идентификатор или номер.""",
-            Next    : "update_project_menu",
+            Next    : "update_draft_show_project",
             Set     :   {
                             Storage  : { Context : Project },
                         },
             Input   : {Parameters: "id"},
-            Functions   : ["get_data", ["reset_to_start","""user.variables[Storage][Success]"""]],
-            Properties  : [Lexeme_preserving]
+            Functions   : ["show", ["reset_to_start","""not user.variables[Storage][Success]"""]],
         },
         "update_project_menu" : {
             Type    : Ask,
@@ -262,34 +297,31 @@ scenery_source = {
                             "update_call":["готово", ".", "!"]
                         },
         },
-        "draft_show_project" : {
+        "update_draft_show_project" : {
             Type    : Say,
             Next    : "update_project_menu",
-            Functions: ["show_project_draft"],
+            Functions: ["show_project_update_draft"],
             Properties : [Lexeme_preserving]
         },
         "update_project_set_identifier" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи идентификатор проекта.""",
-            Next    : "draft_show_project",
+            Next    : "update_draft_show_project",
             Input   : {Data:'identifier'},
         },
         "update_project_set_name" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи название проекта.""",
-            Next    : "draft_show_project",
+            Next    : "update_draft_show_project",
             Input   : {Data:'name'},
         },
         "update_project_set_description" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи описание проекта.""",
-            Next    : "draft_show_project",
+            Next    : "update_draft_show_project",
             Input   : {Data:'description'},
         },
-        "update_issue_init_vars" : {
+        "update_issue_get_id" : {
             Type    : Get,
             Info    : "no_help",
             Phrase  : """Инициализирую переменные... """,
@@ -298,7 +330,16 @@ scenery_source = {
                             Storage  : { Context : Issue }
                         },
             Input   : {Parameters: "id"},
-            Functions   : ["get_data", ["reset_to_start","""user.variables[Storage][Success]"""]],
+            Functions   :   [
+                                "show",
+                                ["reset_to_start","""not user.variables[Storage][Success]"""],
+                            ],
+        },
+        "update_draft_show_issue" : {
+            Type    : Say,
+            Phrase  : """Черновик задачи""",
+            Next    : "update_issue_menu",
+            Functions: ["show_issue_update_draft"],
             Properties : [Lexeme_preserving]
         },
         "update_issue_menu" : {
@@ -307,12 +348,13 @@ scenery_source = {
             Phrase  : """Что ты хочешь поменять в задаче?""",
             Next    : {
                             "update_issue_set_project_id" : ["проект"],
-                            "update_issue_set_subject":["тему","тема"],
-                            "update_issue_set_description":["описание"],
-                            "update_issue_set_date":["дату","дата", "срок"],
-                            "update_issue_set_assign":["исполнителя","исполнитель"],
-                            # ~ "update_issue_set_tracker":["трекер"],
-                            "update_call":["готово", "."]
+                            "update_issue_set_subject" : ["тему","тема"],
+                            "update_issue_set_description" : ["описание"],
+                            "update_issue_set_notes" : ["примечание", "примечания"],
+                            "update_issue_set_date" : ["дату","дата", "срок"],
+                            "update_issue_set_assign" : ["исполнителя","исполнитель"],
+                            "update_issue_set_tracker" : ["трекер"],
+                            "update_call" : ["готово", "."]
                         },
         },
         "update_issue_set_date":{
@@ -326,52 +368,58 @@ scenery_source = {
         },
         "update_issue_set_project_id" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи идентификатор проекта.""",
-            Next    : "draft_show_issue",
+            Next    : "update_draft_show_issue",
             Input   : {Data:'project_id'},
         },
         "update_issue_set_subject" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи тему.""",
-            Next    : "draft_show_issue",
+            Next    : "update_draft_show_issue",
             Input   : {Data:'subject'},
         },
         "update_issue_set_description" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи описание.""",
-            Next    : "draft_show_issue",
+            Next    : "update_draft_show_issue",
             Input   : {Data:'description'},
+        },
+        "update_issue_set_notes" : {
+            Type    : Get,
+            Phrase  : """Введи примечания.""",
+            Next    : "update_draft_show_issue",
+            Input   : {Data:'notes'},
         },
         "update_issue_set_date_start" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи дату начала. Например, 2023-08-02""",
-            Next    : "draft_show_issue",
+            Next    : "update_draft_show_issue",
             Input   : {Data:'start_date'},
         },
         "update_issue_set_date_due" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи срок завершения. Например, 2023-08-02""",
-            Next    : "draft_show_issue",
+            Next    : "update_draft_show_issue",
             Input   : {Data:'due_date'},
         },
         "update_issue_set_assign" : {
             Type    : Get,
-            Info    : "start",
             Phrase  : """Введи id пользователя, которому хочешь назначить задачу.""",
-            Next    : "draft_show_issue",
+            Next    : "update_draft_show_issue",
             Functions:["get_project_memberships"],
+            Input   : {Data:'assigned_to'},
+        },
+        "update_issue_set_tracker" : {
+            Type    : Get,
+            Phrase  : """Введи трекер.""",
+            Next    : "update_draft_show_issue",
+            Functions:["show_issue_trackers"],
             Input   : {Data:'assigned_to'},
         },
         "update_call" : {
             Type     : Say,
-            Error    : "Мне не удалось отправить данные.",
-            Info     : "start",
-            Phrase   : """""",
+            Error    : "Внести изменения не удалось.",
+            Phrase   : """Изменения внесены успешно""",
             Next     : "reset_user",
             Functions: ["update"],
             Properties : [Lexeme_preserving]
@@ -399,7 +447,6 @@ scenery_source = {
         },
         "show_list" : {
             Type    : Ask,
-            Info    : "start",
             Phrase  : """Список чего ты хочешь увидеть?""",
             Next    : {
                         "show_list_of_projects":["проектов"],
@@ -443,7 +490,7 @@ scenery_source = {
             Type     : Say,
             Error    : "data_get_error",
             Info     : "no_help",
-            Phrase   : """""",
+            Phrase   : """Я получила следующую информацию.""",
             Next     : "reset_user",
             Functions: ["show"],
             Properties : [Lexeme_preserving]
