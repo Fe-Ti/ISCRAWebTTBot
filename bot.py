@@ -194,4 +194,4 @@ if __name__ == '__main__':
                 print(error)
     else:
         while True:
-            time.sleep(1)
+            sleep(1)
