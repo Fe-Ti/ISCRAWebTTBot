@@ -118,11 +118,11 @@ class MessageListener(Listener):  # Event listener must inherit Listener
 
 
 if __name__ == '__main__':
-    try:
+    if Path("config.json").exists():
         config = load_json("config.json")
-    except:
+    else:
         print("Can't find config file. Please place it as './config.json'")
-        exit
+        exit(1)
     run_interactive = False
     recompile_scenery = False
     
