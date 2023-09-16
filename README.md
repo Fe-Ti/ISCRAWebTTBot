@@ -5,10 +5,9 @@
 ### Текущий список целей:
  - [X] Поддержка управления СУП Redmine
  - [X] Поддержка мессенджера Telegram
- - [ ] FAQ по СУПу и остальным вещам
 
 ### Зависимости не из стандартной библиотеки Python 3
-* `redmine-bot` - библиотека обеспечивающая исполнение сценария
+* `redminebotlib` - библиотека обеспечивающая исполнение сценария
 * `origamibot` - библиотека для связи с Telegram API
 
 ### Установка и запуск
@@ -23,8 +22,8 @@
 ```
 3. Установите библиотеки:
 ```sh
-python3 -m venv tgrbot
-source ./tgrbot/bin/activate
+python3 -m venv tg_rdbot
+source ./tg_rdbot/bin/activate
 python3 -m pip install --upgrade redminebotlib origamibot
 ```
 4. Запустите bot.py
