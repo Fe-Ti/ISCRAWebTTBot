@@ -7,5 +7,7 @@
     "bot_user_key"          : "8e7a355d7f58e4b209b91d9d1f76f2a85ec4b0b6",
     "user_db_path"          : "./localbase.json",
     "scenery_path"          : "./scenery.json",
-    "allowed_api_functions" : []
+    "allowed_api_functions" : [],
+    "address"               : "127.0.0.1",
+    "port"                  : 43210
 }

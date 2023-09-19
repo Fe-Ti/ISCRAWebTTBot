@@ -25,6 +25,8 @@
 # Then think about next goals
 # Copyright 2023 Fe-Ti aka T.Kravchenko
 
+# Echo server program
+import socket
 import signal
 import json
 import importlib
@@ -117,6 +119,36 @@ class MessageListener(Listener):  # Event listener must inherit Listener
         raise err
 
 
+def process_command(cmd, sc_bot):
+    c_reload = "reload"
+    c_recompile = "recompile"
+    c_stop = "stop"
+    c_start = "start"
+    c_shutdown = "shutdown"
+    c_exit = "exit"
+    if cmd == c_start:
+        scbot.start()
+    elif cmd == c_stop:
+        scbot.stop()
+    elif cmd == c_recompile:
+        importlib.reload(sc)
+        save_scenery_to_json(sc.scenery_source, config["scenery_path"])
+    elif cmd == c_reload:
+        config = load_json("config.json")
+        scenery = load_json(config["scenery_path"])
+        importlib.reload(sar)
+        api_realisation = sar.SceneryApiRealisation(templates=sar.ApiRealisationTemplates())
+        if scbot.is_running:
+            scbot.stop()
+        scbot.reload(config=config, scenery=scenery, api_realisation=api_realisation)
+        scbot.start()
+    elif cmd == c_shutdown:
+        scbot.shutdown()
+    elif cmd == c_exit:
+        raise KeyboardInterrupt
+    else:
+        print("Command error. Try: stop start reload shutdown")
+
 if __name__ == '__main__':
     if Path("config.json").exists():
         config = load_json("config.json")
@@ -158,40 +190,40 @@ if __name__ == '__main__':
     bot.start()   # start bot's threads
     scbot.start()   # start bot's threads
     
-    
-    c_reload = "reload"
-    c_recompile = "recompile"
-    c_stop = "stop"
-    c_start = "start"
-    c_shutdown = "shutdown"
-
     if run_interactive:
         while True:
             try:
                 cmd = input(">>").strip()
-                if cmd == c_start:
-                    scbot.start()
-                elif cmd == c_stop:
-                    scbot.stop()
-                elif cmd == c_recompile:
-                    importlib.reload(sc)
-                    save_scenery_to_json(sc.scenery_source, config["scenery_path"])
-                elif cmd == c_reload:
-                    config = load_json("config.json")
-                    scenery = load_json(config["scenery_path"])
-                    importlib.reload(sar)
-                    api_realisation = sar.SceneryApiRealisation(templates=sar.ApiRealisationTemplates())
-                    if scbot.is_running:
-                        scbot.stop()
-                    scbot.reload(config=config, scenery=scenery, api_realisation=api_realisation)
-                    scbot.start()
-                elif cmd == c_shutdown:
-                    scbot.shutdown()
-                    break
-                else:
-                    print("Command error. Try: stop start reload shutdown")
+                process_command(cmd, scbot)
             except Exception as error:
                 print(error)
     else:
-        while True:
-            sleep(1)
+        # Ssimple socket operation from python docs
+        HOST = config["address"] # Symbolic name meaning all available interfaces
+        PORT = config["port"] # Arbitrary non-privileged port
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((HOST, PORT))
+            s.listen(1)
+            while True:
+                conn, addr = s.accept()
+                with conn:
+                    print("start_cycle")
+                    print("try")
+                    data, _, _, _  = conn.recvmsg(10)
+                    if not data:
+                        pass
+                    else:
+                        try:
+                            print("recvd")
+                            data = data.decode("ascii")
+                            print("dcd")
+                            print(data)
+                            process_command(data, scbot)
+                            print("prssd")
+                            conn.sendall(bytes("OK", "ascii"))
+                            print("finish")
+                        except Exception as error:
+                            print("Oh, shit!")
+                            conn.sendall(bytes(str(error), "ascii"))
+                            print("error appeared and send")
+                
