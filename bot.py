@@ -150,30 +150,73 @@ def process_command(cmd, sc_bot):
         print("Command error. Try: stop start reload shutdown")
 
 if __name__ == '__main__':
-    if Path("config.json").exists():
-        config = load_json("config.json")
-    else:
-        print("Can't find config file. Please place it as './config.json'")
-        exit(1)
     run_interactive = False
+    run_socket = False
     recompile_scenery = False
+    token = ""
+    redmine_token = ""
+    tg_token_len = 46
+    rm_token_len = 40
+    cfg_filename = "config.json"
     
-    if len(argv) > 2:
-        if "-i" in argv:
-            run_interactive = True
-        if "-r" in argv:
-            recompile_scenery = True
-    
+    if len(argv) > 1:
+        for n, key in enumerate(argv):
+            if "-i" == key:
+                run_interactive = True
+            elif "-s" == key:
+                run_socket = True
+            elif "-r" == key:
+                recompile_scenery = True
+            elif "-t" == key:
+                try:
+                    token = argv[n + 1]
+                except:
+                    print("Parameter -t requires argument.")
+                    exit(1)
+            elif "-k" == key:
+                try:
+                    redmine_token = argv[n + 1]
+                except:
+                    print("Parameter -k requires argument.")
+                    exit(1)
+            elif "-c" == key:
+                try:
+                    cfg_filename = argv[n + 1]
+                except:
+                    print("Parameter -c requires argument.")
+                    exit(1)
+    else:
+        print("""Simple keys:
+    -i      -   interactive mode
+    -r      -   force scenery recompile
+    -s      -   socket mode (control via socket)
+Keys with args:
+    -c CFG_FILE - configuration file in JSON format
+    -t TG_TOKEN - Telegram API token
+    -k RM_TOKEN - Redmine API token (is used to access enumerations)
+""")
+
+    if len(token) != tg_token_len:
+        print(f"Telegram API token should be {tg_token_len} characters in length.")
+        exit(1)
+    elif len(redmine_token) != rm_token_len:
+        print(f"Redmine API token should be {rm_token_len} characters in length.")
+        exit(1)
+
+    if Path(cfg_filename).exists():
+        config = load_json(cfg_filename)
+    else:
+        print(f"Can't find config file. Please place it as '{cfg_filename}'")
+        exit(1)
+
     if recompile_scenery or not Path(config["scenery_path"]).exists():
         save_scenery_to_json(sc.scenery_source, config["scenery_path"])
     scenery = load_json(config["scenery_path"])
     
-    token = (argv[1] if len(argv) > 1 else input('Enter bot token: '))
-
     bot = Bot(token)   # Create instance of OrigamiBot class
     
     api_realisation = sar.SceneryApiRealisation(templates=sar.ApiRealisationTemplates())
-    scbot = RedmineBot(scenery, config, api_realisation=api_realisation)   # Create instance of scenery bot
+    scbot = RedmineBot(scenery, config, redmine_token, api_realisation=api_realisation)   # Create instance of scenery bot
 
     # Add an event listener
     bot.add_listener(MessageListener(bot,scbot))
@@ -183,7 +226,6 @@ if __name__ == '__main__':
     def handler(signum, frame):
         global scbot, bot
         scbot.shutdown()
-        # ~ bot.stop()
         raise KeyboardInterrupt
     signal.signal(signal.SIGINT, handler)
 
@@ -197,7 +239,7 @@ if __name__ == '__main__':
                 process_command(cmd, scbot)
             except Exception as error:
                 print(error)
-    else:
+    elif run_socket:
         # Ssimple socket operation from python docs
         HOST = config["address"] # Symbolic name meaning all available interfaces
         PORT = config["port"] # Arbitrary non-privileged port
@@ -207,23 +249,16 @@ if __name__ == '__main__':
             while True:
                 conn, addr = s.accept()
                 with conn:
-                    print("start_cycle")
-                    print("try")
                     data, _, _, _  = conn.recvmsg(10)
                     if not data:
                         pass
                     else:
                         try:
-                            print("recvd")
                             data = data.decode("ascii")
-                            print("dcd")
-                            print(data)
                             process_command(data, scbot)
-                            print("prssd")
                             conn.sendall(bytes("OK", "ascii"))
-                            print("finish")
                         except Exception as error:
-                            print("Oh, shit!")
                             conn.sendall(bytes(str(error), "ascii"))
-                            print("error appeared and send")
-                
+    else:
+        while True:
+            sleep(1)
