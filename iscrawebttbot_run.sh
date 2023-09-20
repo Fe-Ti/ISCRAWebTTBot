@@ -6,14 +6,6 @@ cleanup() {
     ls -la
 }
 
-# Hardcoded for docker volume
-if [[ -d udb ]]
-    then
-    echo "udb directory is found"
-else then
-    mkdir udb
-fi
-
 # Trap SIGTERM
 trap 'cleanup' SIGTERM
 
