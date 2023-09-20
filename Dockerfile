@@ -3,8 +3,12 @@ FROM python:3-alpine
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./
+COPY ./bot ./
+COPY config.json ./
+
 RUN pip install --no-cache-dir -r requirements.txt
+RUN mkdir ./udb
 
-COPY . .
+COPY iscrawebttbot_run.sh /usr/local/bin/
 
-CMD [ "python", "./bot.py" ]
+ENTRYPOINT [ "/usr/local/bin/iscrawebttbot_run.sh" ]

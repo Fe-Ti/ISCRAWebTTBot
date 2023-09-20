@@ -2,6 +2,6 @@ certifi==2023.7.22
 charset-normalizer==3.2.0
 idna==3.4
 origamibot==2.3.6
-redminebotlib==2023.9b2
+redminebotlib>=2023.9b2
 requests==2.31.0
 urllib3==2.0.4
