@@ -7,7 +7,6 @@ COPY ./bot ./
 COPY config.json ./
 
 RUN pip install --no-cache-dir -r requirements.txt
-RUN mkdir ./udb
 
 COPY iscrawebttbot_run.sh /usr/local/bin/
 
