@@ -14,6 +14,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Get sources
+        uses: actions/checkout@v4
       - name: Container meta
         id: meta
         uses: docker/metadata-action@v5
@@ -41,3 +43,4 @@ jobs:
           context: .
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          push: true
