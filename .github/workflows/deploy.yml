@@ -24,4 +24,6 @@ jobs:
         with:
           kubectl: 1.18.2
           command: |
-            kubectl rollout restart -n iscraweb deployment ttbot
+            echo -n "$KUBECONFIG" > .kubeconfig
+            export KUBECONFIG=$(pwd)/.kubeconfig
+            kubectl rollout restart -n iscrawebtt deployment ttbot
