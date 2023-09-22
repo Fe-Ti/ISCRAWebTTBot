@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 # Define cleanup procedure
 cleanup() {
-    /usr/bin/env python ./bot_control.py -c $CFG shutdown
-    /usr/bin/env python ./bot_control.py -c $CFG exit
+    /usr/bin/env python ./bot_control.py -c ./config.json shutdown
+    /usr/bin/env python ./bot_control.py -c ./config.json exit
     ls -la
 }
 
@@ -24,7 +24,7 @@ trap 'cleanup' SIGTERM
 envsubst < "$CFG" > ./config.json
 cat ./config.json
 
-/usr/bin/env python ./bot.py -k "$K" -t "$T" -c ./config.json -s
+/usr/bin/env python ./bot.py -k "$T" -t "$K" -c ./config.json -s
 
 # Wait
 wait $!
