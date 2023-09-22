@@ -5,47 +5,52 @@ import logging
 from datetime import date
 
 from redminebotlib import *
+from redminebotlib.default_scenery_api_realisation import get_string_from_enum_list
 
 class ApiRealisationTemplates(DefaultApiRealisationTemplates):
     issue = """№{id} {subject}
 
 Описание: {description}
-Статус: {status[name]}
 
 Автор: {author[name]} ({author[id]})
-Трекер: {tracker[name]}
+Трекер: {tracker[name]} ({tracker[id]})
     
 Дата начала: {start_date}
 Срок завершения: {due_date}
+Приоритет: {priority[name]}({priority[id]})
 Статус: {status[name]}({status[id]})
 """
     issue_assigned_to = "Назначена: {assigned_to[name]} ({assigned_to[id]})"
+    issue_parent_issue = "Родительская задача: {parent[id]}"
 
 
     issue_draft = """Черновик задачи:
 Тема: {subject}
 ID проекта: {project_id}
-
+Родительская задача: {parent_issue_id}
 Описание: {description}
 
 Дата начала: {start_date}
 Срок завершения: {due_date}
-Статус: {status}
+Статус: {status_id}
 
 Назначена: {assigned_to}
-Трекер: {tracker}"""
+Трекер: {tracker_id}
+Приоритет: {priority_id}"""
 
-    issue_update_draft = """Состояние задачи:{}"""
+    issue_update_draft = """Изменения в задаче:{}"""
     issue_update_dict = {
         "notes"         : "\nПримечания:",
         "project_id"    : "\nID проекта:",
+        "project_id"    : "\nID задачи-родителя:",
         "subject"       : "\nТема:",
         "description"   : "\nОписание:",
         "start_date"    : "\nДата начала:",
         "due_date"      : "\nСрок завершения:",
-        "status"        : "\nСтатус:",
+        "status_id"        : "\nСтатус:",
         "assigned_to"   : "\nНазначена:",
-        "tracker"       : "\nТрекер:",
+        "tracker_id"       : "\nТрекер:",
+        "priority_id"       : "\nТрекер:",
     }
 
 
@@ -196,6 +201,8 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
             string = self.templates.issue.format_map(issue)
             if "assigned_to" in issue:
                 string += self.templates.issue_assigned_to.format_map(issue)
+            if "parent" in issue:
+                string += self.templates.issue_parent_issue.format_map(issue)
             if "custom_fields" in issue:
                 for custom_field in issue["custom_fields"]:
                     string += self.templates.project_custom_field.format_map(custom_field)
@@ -333,7 +340,13 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
         return string
 
     def show_project_memberships(self, user):
-        string = self._get_project_memberships(user, user.variables[Data]["identifier"])
+        if "identifier" in user.variables[Data]:
+            project_id = user.variables[Data]["identifier"]
+        elif "project_id" in user.variables[Data]:
+            project_id = user.variables[Data]["project_id"]
+        else:
+            raise KeyError("Can't show memberships, because project id is not scpecified.")
+        string = self._get_project_memberships(user, project_id)
         if not string:
             return
         self.bot.reply_function(Message(user.uid, string))
@@ -395,4 +408,16 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
             self._report_failure(user, resp_data)
             user.variables[Storage][Success] = False
 
+    def get_parent_issue_project_id(self, user):
+        if "parent_issue_id" not in user.variables[Data]:
+            return
+        context = user.variables[Storage][Context]
+        resp_data = self.bot.scu.show_issue({"id":user.variables[Data]["parent_issue_id"]},
+                                            user.variables[Settings][Key])
+        if resp_data[Success]:
+            user.variables[Data]["project_id"] = resp_data["data"][context.lower()]["project"]["id"]
+            user.variables[Storage][Success] = resp_data[Success]
+        else:
+            # ~ self._report_failure(user, resp_data)
+            user.variables[Storage][Success] = False
 
