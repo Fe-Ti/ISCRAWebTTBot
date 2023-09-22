@@ -16,7 +16,7 @@ scenery_source = {
                 Type    : Say,
                 Error   : None,
                 Info    : None,
-                Phrase  : """А пока, как сказано в Слове, "Почнёмъ же, братие, повѣсть сию" c ключа к API.""",
+                Phrase  : """А пока, как сказано в Слове, "Почнёмъ же, братие, повѣсть сию".""",
                 Next    : "set_key",
                 Properties : [Say_anyway, Lexeme_preserving]
         },
@@ -34,7 +34,6 @@ scenery_source = {
                         "update"    : ["обнови","измени"],
                         "show"      : ["покажи"],
                         "delete"    : ["удали"],
-                        # ~ "select"    : ["выбери", "в"],
                         "settings"  : ["запомни", "настрой"]
                     },
         },
@@ -91,7 +90,7 @@ scenery_source = {
             Phrase  : """Какой тип объекта ты хочешь создать?""",
             Next    : {
                             "create_project_init_vars":["проект"],
-                            "create_issue_init_vars":["задачу"],
+                            "create_issue_init_vars":["задачу", "подзадачу"],
                         },
             # ~ Properties : []
         },
@@ -119,7 +118,6 @@ scenery_source = {
                             "create_project_set_name":["название","имя"],
                             "create_project_set_identifier":["идентификатор", "id"],
                             "create_project_set_description":["описание"],
-                            # ~ "create_project_set_parent_nop":["родительский"],
                             "create_call":["готово", ".", "!"]
                         },
         },
@@ -151,9 +149,9 @@ scenery_source = {
         "create_issue_init_vars" : {
             Type    : Ask,
             Info    : "no_help",
-            Phrase  : """Инициализирую переменные... """,
+            Phrase  : """Инициализирую переменные... Продолжай """,
             Next    :   {
-                        "create_issue_in_project_prep" : ["в"],
+                        "create_issue_in_prep" : ["в"],
                         "create_issue_set_project_id" : ["проект"],
                         "create_issue_set_subject" : ["тема"]
                         },
@@ -165,20 +163,23 @@ scenery_source = {
                                 "description"   : "",
                                 "start_date" : "",
                                 "due_date" : "",
-                                "status" : "",
+                                "status_id" : "",
                                 "assigned_to" : "",
-                                "tracker" : "",
+                                "tracker_id" : "",
+                                "priority_id" : "",
+                                "parent_issue_id" : "",
                                 # ~ "" : "",
                             }
                         },
             Properties : [Lexeme_preserving]
         },
-        "create_issue_in_project_prep":{
+        "create_issue_in_prep":{
             Type    : Ask,
             Info    : "Здесь должна быть справка",
             Phrase  : """В чём?""",
             Next    :   {
-                            "create_issue_set_project_id": ["проекте"]
+                            "create_issue_set_project_id": ["проекте"],
+                            "create_issue_set_parent_id": ["задаче"]
                         },
         },
         "create_issue_menu" : {
@@ -187,13 +188,40 @@ scenery_source = {
             Phrase  : """Что ты хочешь поменять в задаче?""",
             Next    : {
                             "create_issue_set_project_id" : ["проект"],
+                            "create_issue_set_parent_id" : ["родителя","родитель"],
                             "create_issue_set_subject":["тему","тема"],
                             "create_issue_set_description":["описание"],
                             "create_issue_set_date":["дату","дата", "срок"],
-                            "create_issue_set_assign":["исполнителя","исполнитель"],
-                            "create_issue_set_tracker":["трекер"],
+                            "create_issue_set_assign0":["исполнителя","исполнитель", "назначена"],
+                            "create_issue_set_tracker0":["трекер"],
+                            "create_issue_set_priority0":["приоритет"],
+                            "create_issue_set_status0":["статус"],
                             "create_call":["готово", "."]
                         },
+        },
+        "create_issue_set_assign0" : {
+            Type    : Say,
+            Next    : "create_issue_set_assign",
+            Functions:["show_project_memberships"],
+            Properties: [Lexeme_preserving]
+        },
+        "create_issue_set_tracker0" : {
+            Type    : Say,
+            Next    : "create_issue_set_tracker",
+            Functions:["show_issue_trackers"],
+            Properties: [Lexeme_preserving]
+        },
+        "create_issue_set_status0" : {
+            Type    : Say,
+            Next    : "create_issue_set_status",
+            Functions:["show_issue_statuses"],
+            Properties: [Lexeme_preserving]
+        },
+        "create_issue_set_priority0" : {
+            Type    : Say,
+            Next    : "create_issue_set_priority",
+            Functions:["show_issue_priorities"],
+            Properties: [Lexeme_preserving]
         },
         "draft_show_issue" : {
             Type    : Say,
@@ -210,13 +238,19 @@ scenery_source = {
                             "create_issue_set_date_start": ["начала"],
                             "create_issue_set_date_due" : ["завершения"]
                         },
-            # ~ Properties : []
         },
         "create_issue_set_project_id" : {
             Type    : Get,
             Phrase  : """Введи идентификатор проекта.""",
             Next    : "draft_show_issue",
             Input   : {Data:'project_id'},
+        },
+        "create_issue_set_parent_id" : {
+            Type    : Get,
+            Phrase  : """Введи идентификатор родительской задачи.""",
+            Next    : "draft_show_issue",
+            Input   : {Data:'parent_issue_id'},
+            Functions: [["get_parent_issue_project_id","""not user.variables[Data]['project_id']"""],],
         },
         "create_issue_set_subject" : {
             Type    : Get,
@@ -244,17 +278,27 @@ scenery_source = {
         },
         "create_issue_set_assign" : {
             Type    : Get,
-            Phrase  : """Введи id пользователя, которому хочешь назначить задачу.""",
+            Phrase  : """Введи ID пользователя, которому хочешь назначить задачу.""",
             Next    : "draft_show_issue",
-            Functions:["show_project_memberships"],
             Input   : {Data:'assigned_to'},
         },
         "create_issue_set_tracker" : {
             Type    : Get,
-            Phrase  : """Введи трекер.""",
+            Phrase  : """Введи ID трекера.""",
             Next    : "draft_show_issue",
-            Functions:["show_issue_trackers"],
-            Input   : {Data:'assigned_to'},
+            Input   : {Data:'tracker_id'},
+        },
+        "create_issue_set_status" : {
+            Type    : Get,
+            Phrase  : """Введи ID статуса.""",
+            Next    : "draft_show_issue",
+            Input   : {Data:'status_id'},
+        },
+        "create_issue_set_priority" : {
+            Type    : Get,
+            Phrase  : """Введи ID приоритета.""",
+            Next    : "draft_show_issue",
+            Input   : {Data:'priority_id'},
         },
         "create_call" : {
             Type     : Say,
@@ -349,13 +393,40 @@ scenery_source = {
             Next    : {
                             "update_issue_set_project_id" : ["проект"],
                             "update_issue_set_subject" : ["тему","тема"],
+                            "update_issue_set_parent_id" : ["родителя","родитель"],
                             "update_issue_set_description" : ["описание"],
                             "update_issue_set_notes" : ["примечание", "примечания"],
                             "update_issue_set_date" : ["дату","дата", "срок"],
-                            "update_issue_set_assign" : ["исполнителя","исполнитель"],
-                            "update_issue_set_tracker" : ["трекер"],
+                            "update_issue_set_assign0" : ["исполнителя","исполнитель", "назначена"],
+                            "update_issue_set_tracker0" : ["трекер"],
+                            "update_issue_set_status0" : ["статус"],
+                            "update_issue_set_priority0" : ["приоритет"],
                             "update_call" : ["готово", "."]
                         },
+        },
+        "update_issue_set_assign0" : {
+            Type    : Say,
+            Next    : "update_issue_set_assign",
+            Functions:["show_project_memberships"],
+            Properties: [Lexeme_preserving]
+        },
+        "update_issue_set_tracker0" : {
+            Type    : Say,
+            Next    : "update_issue_set_tracker",
+            Functions:["show_issue_trackers"],
+            Properties: [Lexeme_preserving]
+        },
+        "update_issue_set_status0" : {
+            Type    : Say,
+            Next    : "update_issue_set_status",
+            Functions:["show_issue_statuses"],
+            Properties: [Lexeme_preserving]
+        },
+        "update_issue_set_priority0" : {
+            Type    : Say,
+            Next    : "update_issue_set_priority",
+            Functions:["show_issue_priorities"],
+            Properties: [Lexeme_preserving]
         },
         "update_issue_set_date":{
             Type    : Ask,
@@ -371,6 +442,12 @@ scenery_source = {
             Phrase  : """Введи идентификатор проекта.""",
             Next    : "update_draft_show_issue",
             Input   : {Data:'project_id'},
+        },
+        "update_issue_set_parent_id" : {
+            Type    : Get,
+            Phrase  : """Введи идентификатор родительской задачи.""",
+            Next    : "update_draft_show_issue",
+            Input   : {Data:'parent_issue_id'},
         },
         "update_issue_set_subject" : {
             Type    : Get,
@@ -406,15 +483,25 @@ scenery_source = {
             Type    : Get,
             Phrase  : """Введи id пользователя, которому хочешь назначить задачу.""",
             Next    : "update_draft_show_issue",
-            Functions:["get_project_memberships"],
             Input   : {Data:'assigned_to'},
         },
         "update_issue_set_tracker" : {
             Type    : Get,
-            Phrase  : """Введи трекер.""",
+            Phrase  : """Введи ID трекера.""",
             Next    : "update_draft_show_issue",
-            Functions:["show_issue_trackers"],
-            Input   : {Data:'assigned_to'},
+            Input   : {Data:'tracker_id'},
+        },
+        "update_issue_set_status" : {
+            Type    : Get,
+            Phrase  : """Введи ID статуса.""",
+            Next    : "update_draft_show_issue",
+            Input   : {Data:'status_id'},
+        },
+        "update_issue_set_priority" : {
+            Type    : Get,
+            Phrase  : """Введи ID приоритета.""",
+            Next    : "update_draft_show_issue",
+            Input   : {Data:'priority_id'},
         },
         "update_call" : {
             Type     : Say,
@@ -501,8 +588,6 @@ scenery_source = {
             Phrase  : "Что ты хочешь настроить? ('ничего' или '.' - выход из режима настройки)",
             Next    :   {
                         "set_key" : ["ключ"],
-                        # ~ "set_approve_mode" : ["подтверждение"],
-                        # ~ "set_behaviour" : ["поведение"],
                         "start" : ["ничего", "."]
                         }
         },

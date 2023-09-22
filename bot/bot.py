@@ -150,7 +150,6 @@ def process_command(cmd, sc_bot):
         print("Command error. Try: stop start reload shutdown")
 
 if __name__ == '__main__':
-    # ~ print(argv)
     run_interactive = False
     run_socket = False
     recompile_scenery = False
