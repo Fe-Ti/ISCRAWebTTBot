@@ -26,7 +26,7 @@
 # Copyright 2023 Fe-Ti aka T.Kravchenko
 
 # Echo server program
-import socket
+import http
 import signal
 import json
 import importlib
@@ -119,35 +119,85 @@ class MessageListener(Listener):  # Event listener must inherit Listener
         raise err
 
 
-def process_command(cmd, sc_bot):
+def process_command(commands, sc_bot, cfg_filename):
     c_reload = "reload"
-    c_recompile = "recompile"
     c_stop = "stop"
     c_start = "start"
-    c_shutdown = "shutdown"
+    c_save = "save"
+    c_notify = "notify"
     c_exit = "exit"
-    if cmd == c_start:
-        scbot.start()
-    elif cmd == c_stop:
-        scbot.stop()
-    elif cmd == c_recompile:
-        importlib.reload(sc)
-        save_scenery_to_json(sc.scenery_source, config["scenery_path"])
-    elif cmd == c_reload:
-        config = load_json("config.json")
-        scenery = load_json(config["scenery_path"])
-        importlib.reload(sar)
-        api_realisation = sar.SceneryApiRealisation(templates=sar.ApiRealisationTemplates())
-        if scbot.is_running:
+    if type(commands) is str:
+        commands = [commands]
+    for cmd in commands:
+        print("cmd:", cmd)
+        if cmd == c_start:
+            scbot.start()
+        elif cmd == c_stop:
             scbot.stop()
-        scbot.reload(config=config, scenery=scenery, api_realisation=api_realisation)
-        scbot.start()
-    elif cmd == c_shutdown:
-        scbot.shutdown()
-    elif cmd == c_exit:
-        raise KeyboardInterrupt
-    else:
-        print("Command error. Try: stop start reload shutdown")
+        elif cmd == c_reload:
+            config = load_json(cfg_filename)
+            importlib.reload(sc)
+            save_scenery_to_json(sc.scenery_source, config["scenery_path"])
+            scenery = load_json(config["scenery_path"])
+            importlib.reload(sar)
+            api_realisation = sar.SceneryApiRealisation(templates=sar.ApiRealisationTemplates())
+            if scbot.is_running:
+                scbot.stop()
+            scbot.reload(config=config, scenery=scenery, api_realisation=api_realisation)
+            scbot.start()
+        elif cmd == c_save:
+            scbot.save()
+        elif cmd == c_notify:
+            scbot.notificating_routine()
+        elif cmd == c_exit:
+            scbot.stop()
+            raise KeyboardInterrupt
+        else:
+            raise ValueError("Command error. Try: stop start reload save")
+
+class JBCHandler(http.server.BaseHTTPRequestHandler):
+    scbot = None
+    cfg_filename = None
+    
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        if scbot.is_running:
+            self.wfile.write(b"""{"response":"Bot is up and running.","success":true}""")
+        else:
+            self.wfile.write(b"""{"response":"Bot is stopped.","success":true}""")
+
+    def do_POST(self):
+        # read the content-length header
+        content_length = int(self.headers.get("Content-Length"))
+        # read that many bytes from the body of the request
+        try:
+            data = self.rfile.read(content_length).decode("ascii")
+            commands = json.loads(data)["commands"]
+        except Exception as error:
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(bytes(f"""{{"response":"{error}","success":false}}""", "ascii"))
+            return
+        try:
+            process_command(commands, self.scbot, cfg_filename)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(b"""{"response":"Successfully passed commands to bot.","success":true}""")
+        except KeyboardInterrupt as error:
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(bytes(f"""{{"response":"Shutting down...","success":true}}""", "ascii"))
+            raise error
+        except Exception as error:
+            self.send_response(500)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(bytes(f"""{{"response":"{error}","success":false}}""", "ascii"))
 
 if __name__ == '__main__':
     run_interactive = False
@@ -225,7 +275,8 @@ Keys with args:
     
     def handler(signum, frame):
         global scbot, bot
-        scbot.shutdown()
+        scbot.save()
+        scbot.stop()
         raise KeyboardInterrupt
     signal.signal(signal.SIGINT, handler)
 
@@ -240,25 +291,17 @@ Keys with args:
             except Exception as error:
                 print(error)
     elif run_socket:
-        # Ssimple socket operation from python docs
-        HOST = config["address"] # Symbolic name meaning all available interfaces
-        PORT = config["port"] # Arbitrary non-privileged port
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind((HOST, PORT))
-            s.listen(1)
-            while True:
-                conn, addr = s.accept()
-                with conn:
-                    data, _, _, _  = conn.recvmsg(10)
-                    if not data:
-                        pass
-                    else:
-                        try:
-                            data = data.decode("ascii")
-                            process_command(data, scbot)
-                            conn.sendall(bytes("OK", "ascii"))
-                        except Exception as error:
-                            conn.sendall(bytes(str(error), "ascii"))
+        # VERY basic HTTP-JSON server
+        HOST = config["address"]
+        PORT = config["port"]
+        JBCHandler.scbot = scbot # Know what, they will all reference the same bot :)
+        JBCHandler.cfg_filename = cfg_filename
+        httpd = http.server.HTTPServer((HOST, PORT,), JBCHandler)
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("Shutting down.")
+            exit(0)
     else:
         while True:
             sleep(1)

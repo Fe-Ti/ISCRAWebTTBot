@@ -1,7 +1,7 @@
 {
     "refresh_period"        : 1000,
     "sleep_timeout"         : 10,
-    "notify_period"         : 43200,
+    "notify_schedule"       : ["09:00", "21:00"],
     "use_https"             : false,
     "redmine_root_url"      : "localhost/redmine",
     "user_db_path"          : "./udb/localbase.json",
