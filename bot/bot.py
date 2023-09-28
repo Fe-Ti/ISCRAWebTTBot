@@ -150,7 +150,8 @@ def process_command(commands, sc_bot, cfg_filename):
         elif cmd == c_notify:
             scbot.notificating_routine()
         elif cmd == c_exit:
-            scbot.stop()
+            if scbot.is_running:
+                scbot.stop()
             raise KeyboardInterrupt
         else:
             raise ValueError("Command error. Try: stop start reload save")
@@ -158,7 +159,7 @@ def process_command(commands, sc_bot, cfg_filename):
 class JBCHandler(http.server.BaseHTTPRequestHandler):
     scbot = None
     cfg_filename = None
-    
+
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
@@ -208,7 +209,7 @@ if __name__ == '__main__':
     tg_token_len = 46
     rm_token_len = 40
     cfg_filename = "config.json"
-    
+
     if len(argv) > 1:
         for n, key in enumerate(argv):
             if "-i" == key:
@@ -262,9 +263,9 @@ Keys with args:
     if recompile_scenery or not Path(config["scenery_path"]).exists():
         save_scenery_to_json(sc.scenery_source, config["scenery_path"])
     scenery = load_json(config["scenery_path"])
-    
+
     bot = Bot(token)   # Create instance of OrigamiBot class
-    
+
     api_realisation = sar.SceneryApiRealisation(templates=sar.ApiRealisationTemplates())
     scbot = RedmineBot(scenery, config, redmine_token, api_realisation=api_realisation)   # Create instance of scenery bot
 
@@ -272,17 +273,18 @@ Keys with args:
     bot.add_listener(MessageListener(bot,scbot))
     # Add a command holder
     bot.add_commands(BotsCommands(bot, scbot))
-    
+
     def handler(signum, frame):
         global scbot, bot
         scbot.save()
-        scbot.stop()
+        if scbot.is_running:
+            scbot.stop()
         raise KeyboardInterrupt
     signal.signal(signal.SIGINT, handler)
 
     bot.start()   # start bot's threads
     scbot.start()   # start bot's threads
-    
+
     if run_interactive:
         while True:
             try:

@@ -37,7 +37,7 @@ scenery_source = {
                         "settings"  : ["запомни", "настрой"]
                     },
         },
-        
+
         "delete" : {
             Type    : Ask,
             Info    : "Здесь должна быть справка",
@@ -309,11 +309,11 @@ scenery_source = {
             Functions: ["create"],
             Properties : [Lexeme_preserving]
         },
-        
+
         "update" : {
             Type    : Ask,
             Info    : "Здесь должна быть справка",
-            Phrase  : """Какой тип объекта ты хочешь создать?""",
+            Phrase  : """Какой тип объекта ты хочешь изменить?""",
             Next    : {
                             "update_project_get_id":["проект"],
                             "update_issue_get_id":["задачу"],
@@ -368,15 +368,16 @@ scenery_source = {
         "update_issue_get_id" : {
             Type    : Get,
             Info    : "no_help",
-            Phrase  : """Инициализирую переменные... """,
+            Phrase  : """Инициализирую переменные... Введи ID задачи.""",
             Next    : "update_issue_menu",
             Set     :   {
                             Storage  : { Context : Issue }
                         },
             Input   : {Parameters: "id"},
             Functions   :   [
-                                "show",
+                                "get_data",
                                 ["reset_to_start","""not user.variables[Storage][Success]"""],
+                                "show_storage_data", # Show user.variables[Storage][Data]
                             ],
         },
         "update_draft_show_issue" : {

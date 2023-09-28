@@ -14,7 +14,7 @@ class ApiRealisationTemplates(DefaultApiRealisationTemplates):
 
 Автор: {author[name]} ({author[id]})
 Трекер: {tracker[name]} ({tracker[id]})
-    
+
 Дата начала: {start_date}
 Срок завершения: {due_date}
 Приоритет: {priority[name]}({priority[id]})
@@ -75,14 +75,14 @@ ID проекта: {project_id}
     project_list_entry = """\n№{id} "{name}" ({identifier})"""
 
     issue_list_entry = """\n№{id} "{subject}" """
-    
+
     issue_statuses = """Статусы: {}"""
     issue_statuses_list_entry = """\n{id} "{name}" """
     issue_trackers = """Трекеры: {}"""
     issue_trackers_list_entry = issue_statuses_list_entry
     issue_priorities = """Приоритеты: {}"""
     issue_priorities_list_entry = issue_statuses_list_entry
-    
+
     notification_header = "Я проверила список твоих задач."
     notification_no_issues = " Он оказался пуст. :("
     notification_issues_found = " Они такие:\n{}"
@@ -123,7 +123,7 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
 
     def reset_to_start(self, user):
         self.bot.reset_user(user, keep_settings=True, reset_state=True)
-    
+
     def report_failure(self, user, resp_data=list()):
         self.bot.reply_function(Message(user.uid, user.state.error))
         if "errors" in resp_data["data"]:
@@ -184,40 +184,38 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
         else:
             self.report_failure(user, resp_data)
 
-    def _project_to_str(self, user, resp_data):
-        if resp_data[Success]:
-            project = resp_data["data"]["project"]
-            string = self.templates.project.format_map(project)
-            if "custom_fields" in project:
-                for custom_field in project["custom_fields"]:
-                    string += self.templates.project_custom_field.format_map(custom_field)
-            string += self._get_project_memberships(user, project["id"])
-            return string
-        return str()
+    def _project_to_str(self, user, project):
+        string = self.templates.project.format_map(project)
+        if "custom_fields" in project:
+            for custom_field in project["custom_fields"]:
+                string += self.templates.project_custom_field.format_map(custom_field)
+        string += self._get_project_memberships(user, project["id"])
+        return string
 
-    def _issue_to_str(self, user, resp_data):
-        if resp_data[Success]:
-            issue = resp_data["data"]["issue"]
-            string = self.templates.issue.format_map(issue)
-            if "assigned_to" in issue:
-                string += self.templates.issue_assigned_to.format_map(issue)
-            if "parent" in issue:
-                string += self.templates.issue_parent_issue.format_map(issue)
-            if "custom_fields" in issue:
-                for custom_field in issue["custom_fields"]:
-                    string += self.templates.project_custom_field.format_map(custom_field)
-            return string
-        return str()
+    def _issue_to_str(self, user, issue):
+        string = self.templates.issue.format_map(issue)
+        if "assigned_to" in issue:
+            string += self.templates.issue_assigned_to.format_map(issue)
+        if "parent" in issue:
+            string += self.templates.issue_parent_issue.format_map(issue)
+        if "custom_fields" in issue:
+            for custom_field in issue["custom_fields"]:
+                string += self.templates.project_custom_field.format_map(custom_field)
+        return string
 
     def show(self, user):
         if user.variables[Storage][Context] == Project:
             resp_data = self.bot.scu.show_project(user.variables[Parameters],
                                     user.variables[Settings][Key])
-            string = self._project_to_str(user, resp_data)
+            if resp_data[Success]:
+                project = resp_data["data"]["project"]
+                string = self._project_to_str(user, project)
         elif user.variables[Storage][Context] == Issue:
             resp_data = self.bot.scu.show_issue(user.variables[Parameters],
                                     user.variables[Settings][Key])
-            string = self._issue_to_str(user, resp_data)
+            if resp_data[Success]:
+                issue = resp_data["data"]["issue"]
+                string = self._issue_to_str(user, issue)
         else:
             logging.error("Context is not set correctly. Please check your scenery.")
             return
@@ -241,7 +239,7 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
                                     user.variables[Data],
                                     user.variables[Settings][Key])
         elif user.variables[Storage][Context] == Issue:
-            
+
             resp_data = self.bot.scu.update_issue(user.variables[Parameters],
                                     user.variables[Data],
                                     user.variables[Settings][Key])
@@ -280,7 +278,6 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
         else:
             self._report_failure(user, resp_data)
 
-
     def get_issue_list(self, user):
         parameters = user.variables[Parameters]
         key = user.variables[Settings][Key]
@@ -299,19 +296,19 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
 
     def show_project_draft(self, user):
         self.bot.reply_function(Message(
-                                    user.uid, 
+                                    user.uid,
                                     self.templates.project_draft.format_map(user.variables[Data])
                                     ))
 
     def show_issue_draft(self, user):
         self.bot.reply_function(Message(
-                                    user.uid, 
+                                    user.uid,
                                     self.templates.issue_draft.format_map(user.variables[Data])
                                     ))
 
     def show_project_update_draft(self, user):
         self.bot.reply_function(Message(
-                                    user.uid, 
+                                    user.uid,
                                     self.templates.project_update_draft.format_map(user.variables[Storage][Data])
                                     ))
     def show_issue_update_draft(self, user):
@@ -326,7 +323,7 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
 
     def log_to_user(self, user, log_msg):
         self.bot.reply_function(Message(user.uid, log_msg))
-        
+
     def _get_project_memberships(self, user, project_id):
         string = str()
         resp_data = self.bot.scu.get_project_memberships(project_id,
@@ -344,6 +341,8 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
             project_id = user.variables[Data]["identifier"]
         elif "project_id" in user.variables[Data]:
             project_id = user.variables[Data]["project_id"]
+        elif "project" in user.variables[Storage][Data]:
+            project_id = user.variables[Storage][Data]["project"]["id"]
         else:
             raise KeyError("Can't show memberships, because project id is not scpecified.")
         string = self._get_project_memberships(user, project_id)
@@ -360,7 +359,7 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
         else:
             logging.error("Context is not set correctly. Please check your scenery.")
             return
-        
+
     def show_issue_statuses(self, user):
         self._show_enumeration(
             user = user,
@@ -407,6 +406,16 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
         else:
             self._report_failure(user, resp_data)
             user.variables[Storage][Success] = False
+
+    def show_storage_data(self, user):
+        if user.variables[Storage][Context] == Project:
+            string = self._project_to_str(user, user.variables[Storage][Data])
+        elif user.variables[Storage][Context] == Issue:
+            string = self._issue_to_str(user, user.variables[Storage][Data])
+        else:
+            logging.error("Context is not set correctly. Please check your scenery.")
+            return
+        self.bot.reply_function(Message(user.uid, string))
 
     def get_parent_issue_project_id(self, user):
         if "parent_issue_id" not in user.variables[Data]:
