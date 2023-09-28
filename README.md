@@ -18,10 +18,10 @@
 2. Исправьте конфигурацию.
 Параметры указанные ниже отвечают за соединение с сервером. Пример приведён для
 локального сервера Redmine.
-```json
-    "use_https"             : false, // При false будет использован простой http
+```python
+    "use_https"             : false, # При false будет использован простой http
     "redmine_root_url"      : "localhost/redmine",
-    "bot_user_key"          : "8e7a355d7f58e4b209b91d9d1f76f2a85ec4b0b6", // ключ API Redmine
+    "bot_user_key"          : "8e7a355d7f58e4b209b91d9d1f76f2a85ec4b0b6", # ключ API Redmine
 ```
 3. Установите библиотеки.
 ```sh
