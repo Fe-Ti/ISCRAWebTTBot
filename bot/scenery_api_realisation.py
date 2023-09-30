@@ -34,7 +34,7 @@ ID проекта: {project_id}
 Срок завершения: {due_date}
 Статус: {status_id}
 
-Назначена: {assigned_to}
+Назначена: {assigned_to_id}
 Трекер: {tracker_id}
 Приоритет: {priority_id}"""
 
@@ -48,7 +48,7 @@ ID проекта: {project_id}
         "start_date"    : "\nДата начала:",
         "due_date"      : "\nСрок завершения:",
         "status_id"        : "\nСтатус:",
-        "assigned_to"   : "\nНазначена:",
+        "assigned_to_id"   : "\nНазначена:",
         "tracker_id"       : "\nТрекер:",
         "priority_id"       : "\nТрекер:",
     }

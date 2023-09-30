@@ -164,7 +164,7 @@ scenery_source = {
                                 "start_date" : "",
                                 "due_date" : "",
                                 "status_id" : "",
-                                "assigned_to" : "",
+                                "assigned_to_id" : "",
                                 "tracker_id" : "",
                                 "priority_id" : "",
                                 "parent_issue_id" : "",
@@ -280,7 +280,7 @@ scenery_source = {
             Type    : Get,
             Phrase  : """Введи ID пользователя, которому хочешь назначить задачу.""",
             Next    : "draft_show_issue",
-            Input   : {Data:'assigned_to'},
+            Input   : {Data:'assigned_to_id'},
         },
         "create_issue_set_tracker" : {
             Type    : Get,
@@ -484,7 +484,7 @@ scenery_source = {
             Type    : Get,
             Phrase  : """Введи id пользователя, которому хочешь назначить задачу.""",
             Next    : "update_draft_show_issue",
-            Input   : {Data:'assigned_to'},
+            Input   : {Data:'assigned_to_id'},
         },
         "update_issue_set_tracker" : {
             Type    : Get,

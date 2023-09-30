@@ -13,14 +13,16 @@ def load_json(path):
 c_reload = "reload"
 c_stop = "stop"
 c_start = "start"
+c_notify = "notify"
 c_save = "save"
 c_exit = "exit"
 
-cmd_set = {c_start, c_stop, c_reload, c_save, c_exit}
+cmd_set = {c_start, c_stop, c_reload, c_save, c_exit, c_notify}
 help_msg = """Specify commands:
     start       - start bot operation
     stop        - stop bot operation
     reload      - reload config, scenery and its API
+    notify      - start notification routine
     save        - save user database
     exit        - stop bot and exit control daemon process
 """
