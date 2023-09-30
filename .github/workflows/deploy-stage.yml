@@ -1,0 +1,26 @@
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-image.yml
+    with:
+      image_name: zinstack625/iscraweb-ttbot
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to bleeding edge
+        uses: grebois/kube-tools@v1.5.2
+        env:
+          KUBECONFIG_FILE: ${{ secrets.KUBECONFIG }}
+        with:
+          kubectl: 1.18.2
+          command: |
+            echo -n "$KUBECONFIG_FILE" > .kubeconfig
+            export KUBECONFIG=$(pwd)/.kubeconfig
+            kubectl rollout restart -n iscrawebtt deployment ttbot-bleed
