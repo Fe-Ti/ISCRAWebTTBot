@@ -195,9 +195,10 @@ scenery_source = {
                             "create_issue_set_assign0":["исполнителя","исполнитель", "назначена"],
                             "create_issue_set_tracker0":["трекер"],
                             "create_issue_set_priority0":["приоритет"],
-                            "create_issue_set_status0":["статус"],
+                            # ~ "create_issue_set_status0":["статус"],
                             "create_call":["готово", "."]
                         },
+            Hint    : ["тему", "проект", "описание", "исполнитель", "дата", "трекер", "приоритет", "родитель", "готово"],
         },
         "create_issue_set_assign0" : {
             Type    : Say,
@@ -211,12 +212,12 @@ scenery_source = {
             Functions:["show_issue_trackers"],
             Properties: [Lexeme_preserving]
         },
-        "create_issue_set_status0" : {
-            Type    : Say,
-            Next    : "create_issue_set_status",
-            Functions:["show_issue_statuses"],
-            Properties: [Lexeme_preserving]
-        },
+        # ~ "create_issue_set_status0" : {
+            # ~ Type    : Say,
+            # ~ Next    : "create_issue_set_status",
+            # ~ Functions:["show_issue_statuses"],
+            # ~ Properties: [Lexeme_preserving]
+        # ~ },
         "create_issue_set_priority0" : {
             Type    : Say,
             Next    : "create_issue_set_priority",
@@ -287,18 +288,22 @@ scenery_source = {
             Phrase  : """Введи ID трекера.""",
             Next    : "draft_show_issue",
             Input   : {Data:'tracker_id'},
+            Properties: [Dynamic_hint],
+            Hint    : "get_trackers_hint" # function
         },
-        "create_issue_set_status" : {
-            Type    : Get,
-            Phrase  : """Введи ID статуса.""",
-            Next    : "draft_show_issue",
-            Input   : {Data:'status_id'},
-        },
+        # ~ "create_issue_set_status" : {
+            # ~ Type    : Get,
+            # ~ Phrase  : """Введи ID статуса.""",
+            # ~ Next    : "draft_show_issue",
+            # ~ Input   : {Data:'status_id'},
+        # ~ },
         "create_issue_set_priority" : {
             Type    : Get,
             Phrase  : """Введи ID приоритета.""",
             Next    : "draft_show_issue",
             Input   : {Data:'priority_id'},
+            Properties: [Dynamic_hint],
+            Hint    : "get_priorities_hint" # function
         },
         "create_call" : {
             Type     : Say,
@@ -315,9 +320,21 @@ scenery_source = {
             Info    : "Здесь должна быть справка",
             Phrase  : """Какой тип объекта ты хочешь изменить?""",
             Next    : {
-                            "update_project_get_id":["проект"],
-                            "update_issue_get_id":["задачу"],
+                            "update_project_get_id_print_list":["проект"],
+                            "update_issue_get_id_print_list":["задачу"],
                         },
+        },
+        "update_project_get_id_print_list" : {
+            Type    : Say,
+            Next    : "update_project_get_id",
+            Functions: ["get_project_list"],
+            Properties : [Lexeme_preserving]
+        },
+        "update_issue_get_id_print_list" : {
+            Type    : Say,
+            Next    : "update_issue_get_id",
+            Functions: ["get_issue_list",],
+            Properties : [Lexeme_preserving]
         },
         "update_project_get_id" : {
             Type    : Get,
@@ -329,6 +346,8 @@ scenery_source = {
                         },
             Input   : {Parameters: "id"},
             Functions   : ["show", ["reset_to_start","""not user.variables[Storage][Success]"""]],
+            Properties: [Dynamic_hint],
+            Hint    : "get_project_list_hint" # function
         },
         "update_project_menu" : {
             Type    : Ask,
@@ -379,6 +398,8 @@ scenery_source = {
                                 ["reset_to_start","""not user.variables[Storage][Success]"""],
                                 "show_storage_data", # Show user.variables[Storage][Data]
                             ],
+            Properties: [Dynamic_hint],
+            Hint    : "get_issue_list_hint" # function
         },
         "update_draft_show_issue" : {
             Type    : Say,
@@ -491,18 +512,24 @@ scenery_source = {
             Phrase  : """Введи ID трекера.""",
             Next    : "update_draft_show_issue",
             Input   : {Data:'tracker_id'},
+            Properties: [Dynamic_hint],
+            Hint    : "get_trackers_hint" # function
         },
         "update_issue_set_status" : {
             Type    : Get,
             Phrase  : """Введи ID статуса.""",
             Next    : "update_draft_show_issue",
             Input   : {Data:'status_id'},
+            Properties: [Dynamic_hint],
+            Hint    : "get_statuses_hint" # function
         },
         "update_issue_set_priority" : {
             Type    : Get,
             Phrase  : """Введи ID приоритета.""",
             Next    : "update_draft_show_issue",
             Input   : {Data:'priority_id'},
+            Properties: [Dynamic_hint],
+            Hint    : "get_priorities_hint" # function
         },
         "update_call" : {
             Type     : Say,

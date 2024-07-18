@@ -20,8 +20,8 @@ class ApiRealisationTemplates(DefaultApiRealisationTemplates):
 Приоритет: {priority[name]}({priority[id]})
 Статус: {status[name]}({status[id]})
 """
-    issue_assigned_to = "Назначена: {assigned_to[name]} ({assigned_to[id]})"
-    issue_parent_issue = "Родительская задача: {parent[id]}"
+    issue_assigned_to = "Назначена: {assigned_to[name]} ({assigned_to[id]})\n"
+    issue_parent_issue = "Родительская задача: {parent[id]}\n"
 
 
     issue_draft = """Черновик задачи:
@@ -142,7 +142,7 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
             today = date.today()
             for issue in resp_data["data"]["issues"]:
                 string += self.templates.issue_list_entry.format_map(issue)
-                if "due_date" in issue:
+                if "due_date" in issue and issue["due_date"]:
                     due_date = date.fromisoformat(issue["due_date"])
                     days_delta = (due_date - today).days
                     if days_delta < 0:
@@ -285,8 +285,18 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
         user.variables[Storage][Success] = resp_data[Success]
         if resp_data[Success]:
             msg_string = str()
+            today = date.today()
             for issue in resp_data["data"]["issues"]:
                 msg_string += self.templates.issue_list_entry.format_map(issue)
+                if "due_date" in issue and issue["due_date"]:
+                    due_date = date.fromisoformat(issue["due_date"])
+                    days_delta = (due_date - today).days
+                    if days_delta < 0:
+                        days_delta = abs(days_delta)
+                        template = self.templates.expired_due_date
+                    else:
+                        template = self.templates.days_before_due_date
+                    msg_string += template.format(days_delta)
             if not msg_string:
                 self.bot.reply_function(Message(user.uid, "Задач нет."))
             else:
@@ -324,11 +334,13 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
     def log_to_user(self, user, log_msg):
         self.bot.reply_function(Message(user.uid, log_msg))
 
-    def _get_project_memberships(self, user, project_id):
+    def _get_project_memberships(self, user, project_id, return_list = False):
         string = str()
         resp_data = self.bot.scu.get_project_memberships(project_id,
                                                     user.variables[Settings][Key])
         if resp_data[Success]:
+            if return_list:
+                return resp_data["data"]["memberships"]
             member = dict()
             for mship in resp_data["data"]["memberships"]:
                 member["role_names"] = str({ role["name"] for role in mship["roles"] })[1:-1].replace("'","")
@@ -383,6 +395,60 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
             template = self.templates.issue_priorities,
             template_list_entry = self.templates.issue_priorities_list_entry,
         )
+
+    def get_statuses_hint(self, user):
+        # ~ print(self.bot.issue_statuses)
+        return [status['id'] for status in self.bot.issue_statuses]
+        
+    def get_trackers_hint(self, user):
+        # ~ print(self.bot.issue_statuses)
+        return [tracker['id'] for tracker in self.bot.issue_trackers]
+
+    def get_priorities_hint(self, user):
+        # ~ print(self.bot.issue_statuses)
+        return [priority['id'] for priority in self.bot.issue_priorities]
+    
+    def get_project_list_hint(self, user):
+        parameters = user.variables[Parameters]
+        key = user.variables[Settings][Key]
+        resp_data = self.bot.scu.get_project_list(parameters, key)
+        user.variables[Storage][Success] = resp_data[Success]
+        project_list_hint = list()
+        if resp_data[Success]:
+            for project in resp_data["data"]["projects"]:
+                project_list_hint.append(project["id"])
+        else:
+            self._report_failure(user, resp_data)
+        return project_list_hint
+
+    def get_issue_list_hint(self, user):
+        parameters = user.variables[Parameters]
+        key = user.variables[Settings][Key]
+        resp_data = self.bot.scu.get_issue_list(parameters, key)
+        user.variables[Storage][Success] = resp_data[Success]
+        issue_list_hint = list()
+        if resp_data[Success]:
+            for issue in resp_data["data"]["issues"]:
+                issue_list_hint.append(issue["id"])
+        else:
+            self._report_failure(user, resp_data)
+        return issue_list_hint
+
+    
+    def get_memberid_hint(self, user):
+        if "identifier" in user.variables[Data]:
+            project_id = user.variables[Data]["identifier"]
+        elif "project_id" in user.variables[Data]:
+            project_id = user.variables[Data]["project_id"]
+        elif "project" in user.variables[Storage][Data]:
+            project_id = user.variables[Storage][Data]["project"]["id"]
+        else:
+            raise KeyError("Can't show memberships, because project id is not scpecified.")
+        mships = self._get_project_memberships(user, project_id, return_list=True)
+        member_id_hint = list()
+        for mship in mships:
+            member_id_hint.append(mship["user"]["id"])
+        return member_id_hint
 
     # ~ def add_watcher(self, user):
         # ~ pass
