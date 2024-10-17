@@ -398,7 +398,13 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
 
     def get_statuses_hint(self, user):
         # ~ print(self.bot.issue_statuses)
+        return [status['name'] for status in self.bot.issue_statuses]
         return [status['id'] for status in self.bot.issue_statuses]
+
+    def translate_statuses(self, user):
+        for status in self.bot.issue_statuses:
+            if user.variables[Data]['status_id'] == status['name']:
+                user.variables[Data]['status_id'] = status['id']
         
     def get_trackers_hint(self, user):
         # ~ print(self.bot.issue_statuses)
@@ -421,7 +427,12 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
             self._report_failure(user, resp_data)
         return project_list_hint
 
-    def get_issue_list_hint(self, user):
+    def increment_id(self, user): # for testing purposes
+        print("!!!!!!!",user.variables[Parameters]['id'])
+        user.variables[Parameters]['id'] += 1
+
+    def get_issue_list_hint(self, user, issue_range=[0,20]):
+        # ~ print(issue_range)
         parameters = user.variables[Parameters]
         key = user.variables[Settings][Key]
         resp_data = self.bot.scu.get_issue_list(parameters, key)
@@ -432,9 +443,10 @@ class SceneryApiRealisation(DefaultSceneryApiRealisation):
                 issue_list_hint.append(issue["id"])
         else:
             self._report_failure(user, resp_data)
+        # ~ Next = "далее"
+        # ~ issue_list_hint.append(Next)
         return issue_list_hint
 
-    
     def get_memberid_hint(self, user):
         if "identifier" in user.variables[Data]:
             project_id = user.variables[Data]["identifier"]

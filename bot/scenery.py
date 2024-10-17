@@ -234,7 +234,7 @@ scenery_source = {
         "create_issue_set_date":{
             Type    : Ask,
             Info    : "Здесь должна быть справка",
-            Phrase  : """В чём?""",
+            Phrase  : """Дату чего?""",
             Next    :   {
                             "create_issue_set_date_start": ["начала"],
                             "create_issue_set_date_due" : ["завершения"]
@@ -282,6 +282,9 @@ scenery_source = {
             Phrase  : """Введи ID пользователя, которому хочешь назначить задачу.""",
             Next    : "draft_show_issue",
             Input   : {Data:'assigned_to_id'},
+            Properties: [Dynamic_hint],
+            Hint    : "get_memberid_hint", # function
+            # ~ Functions: []
         },
         "create_issue_set_tracker" : {
             Type    : Get,
@@ -453,7 +456,7 @@ scenery_source = {
         "update_issue_set_date":{
             Type    : Ask,
             Info    : "Здесь должна быть справка",
-            Phrase  : """В чём?""",
+            Phrase  : """Дату чего?""",
             Next    :   {
                             "update_issue_set_date_start": ["начала"],
                             "update_issue_set_date_due" : ["завершения"]
@@ -494,6 +497,7 @@ scenery_source = {
             Phrase  : """Введи дату начала. Например, 2023-08-02""",
             Next    : "update_draft_show_issue",
             Input   : {Data:'start_date'},
+            # ~ Functions: ["check_date"]
         },
         "update_issue_set_date_due" : {
             Type    : Get,
@@ -506,6 +510,8 @@ scenery_source = {
             Phrase  : """Введи id пользователя, которому хочешь назначить задачу.""",
             Next    : "update_draft_show_issue",
             Input   : {Data:'assigned_to_id'},
+            Properties: [Dynamic_hint],
+            Hint    : "get_memberid_hint" # function
         },
         "update_issue_set_tracker" : {
             Type    : Get,
@@ -542,6 +548,7 @@ scenery_source = {
         "show" : {
             Type    : Ask,
             Phrase  : """Что ты хочешь посмотреть?""",
+            Set   : {Parameters:{'id':0}},
             Next    : {
                         "show_list":["список"],
                         "show_project_get_id":["проект"],
@@ -596,10 +603,23 @@ scenery_source = {
         "show_issue_get_id" : {
             Type    : Get,
             Info    : "no_help",
-            Phrase  : """Какую задачу ты хочешь посмотреть?""",
+            Phrase  : """Какую задачу ты хочешь посмотреть?  {Parameters[id]}""",
             Next    : "show_call",
+            Alter_next : {
+                        "alter_test":["альт"],
+                        },
             Input   : {Parameters:'id'},
-            Set     : { Storage  : { Context : Issue } }
+            Set     : { Storage  : { Context : Issue } },
+            Properties: [Phrase_formatting, Dynamic_hint, Alter_next],
+            Hint    : "get_issue_list_hint" # function
+        },
+        "alter_test" : { #testing new feature
+            Type    : Say,
+            Info    : "no_help",
+            Phrase  : "OMG! It works! {Parameters[id]}",
+            Next    : "show_issue_get_id",
+            Functions: ["increment_id"],
+            Properties: [Phrase_formatting, Lexeme_preserving, Say_anyway]
         },
         "show_call" : {
             Type     : Say,
@@ -667,7 +687,7 @@ P.S.
     Commands : {
         Info      : ["!справка", "!помощь"],
         Reset     : ["!сброс"],
-        Cancel    : ["!отмена"],
+        Cancel    : ["!отмена","!cancel","!abort"],
         Repeat    : ["!повтори"]
     },
 }

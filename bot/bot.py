@@ -213,7 +213,20 @@ Keys with args:
 
     @bot.message_handler(commands=['start', 'help'])
     def handle_cmd(message):
-        bot.reply_to(message, "Пришли фото ромашки или подсолнуха. А я скажу что это.")
+        # ~ bot.reply_to(message, get_start_msg(message))
+        uid = str(message.chat.id)
+        if uid not in scbot.user_db:
+            scbot.add_user(uid)
+            bot.send_message(
+                message.chat.id,
+                get_start_msg(message))
+            scbot.user_db[uid].state = scbot.scenery_states["init1"]
+            scbot.process_user_message(Message(uid,"nothing"))
+        else:
+            bot.send_message(
+                message.chat.id,
+                f"""{message.chat.first_name}, на тебя дело уже заведено.
+Отправь мне "!справка", если не помнишь как со мной работать.""")
 
     @bot.message_handler(content_types=['text'])
     def handle_img(message):
@@ -240,7 +253,7 @@ Keys with args:
     def reply_function(message):
         global bot
         if not message.hint: 
-            bot.send_message(int(message.user_id), message.content, reply_markup=types.ReplyKeyboardRemove())
+            bot.send_message(int(message.user_id), f"" + message.content, reply_markup=types.ReplyKeyboardRemove())
         else:
             markup = types.ReplyKeyboardMarkup(row_width=3)
             markup.add(*[types.KeyboardButton(i) for i in message.hint])
@@ -257,6 +270,9 @@ Keys with args:
     signal.signal(signal.SIGINT, handler)
 
     scbot.start()   # start bot's threads
+    for i in range(10000000):
+        a = i+1
+    print(scbot.issue_statuses)
     bot.infinity_polling(interval=0, timeout=20)
 
 
